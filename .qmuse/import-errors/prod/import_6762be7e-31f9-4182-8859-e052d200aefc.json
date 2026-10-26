@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "jobId": "import_6762be7e-31f9-4182-8859-e052d200aefc",
+  "status": "FAILED",
+  "stage": "FAILED",
+  "message": "导入失败，请根据诊断信息处理后重试",
+  "diagnostic": "get connection for db:obv10_qmusespace_common_ds_gzhost pool failed, maxConn:10, err:resource pool timed out",
+  "failureDiagnostic": {
+    "version": 1,
+    "category": "UNKNOWN",
+    "stage": "SYNCING_CLOUD",
+    "summary": "get connection for db:obv10_qmusespace_common_ds_gzhost pool failed, maxConn:10, err:resource pool timed out",
+    "fixableByModel": false,
+    "suggestedAction": "CONTACT_SUPPORT",
+    "items": [
+      {
+        "message": "get connection for db:obv10_qmusespace_common_ds_gzhost pool failed, maxConn:10, err:resource pool timed out"
+      }
+    ]
+  },
+  "retryCommand": "qmuse import . --env prod",
+  "retryAdvice": "在当前项目目录修复源码后执行，将更新已绑定的应用。",
+  "environment": "prod",
+  "generatedAt": "2026-10-24T05:20:04.697Z"
+}

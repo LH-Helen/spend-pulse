@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="com.kuaishou.kwaipilot.jetbrains.service.WorkspaceExtensionStorageService">
+    <option name="storageMap">
+      <map>
+        <entry key="kuaishou.kwaipilot" value="{&quot;viewModel&quot;:&quot;siderbar&quot;,&quot;fullModeNewWindow&quot;:false}" />
+      </map>
+    </option>
+  </component>
+</project>

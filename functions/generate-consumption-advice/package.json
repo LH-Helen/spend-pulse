@@ -1,0 +1,8 @@
+{
+  "name": "generate-consumption-advice",
+  "type": "module",
+  "main": "src/main.js",
+  "dependencies": {
+    "node-appwrite": "^23.0.0"
+  }
+}

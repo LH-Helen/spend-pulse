@@ -1,0 +1,146 @@
+{
+  "databaseId": "qmuse-app-db",
+  "projectAlias": "default",
+  "tables": [
+    {
+      "tableId": "spend_records",
+      "name": "用户消费记录",
+      "comment": "用户与购买记录id的对应关系：以 owner(creatorId) 表达归属，user_ref 供云函数显式聚合",
+      "columns": [
+        { "key": "amount", "type": "double", "comment": "消费金额", "required": true },
+        { "key": "spend_date", "type": "datetime", "comment": "消费时间", "required": true },
+        { "key": "category", "type": "string", "format": "enum", "elements": ["玩具", "食品", "服饰", "数码", "家居", "健康", "图书", "宠物", "户外", "娱乐", "美妆", "母婴"], "size": 64, "comment": "宽泛类型", "required": true },
+        { "key": "tags", "type": "string", "size": 2000, "comment": "细分标签JSON数组,如[\"手办\",\"动漫周边\"]", "required": false },
+        { "key": "product_id", "type": "string", "size": 128, "comment": "关联商品信息表", "required": false },
+        { "key": "product_name", "type": "string", "size": 255, "comment": "商品名", "required": false },
+        { "key": "merchant", "type": "string", "size": 255, "comment": "商家/渠道", "required": false },
+        { "key": "note", "type": "string", "size": 1000, "comment": "备注", "required": false },
+        { "key": "user_ref", "type": "string", "size": 128, "comment": "显式用户标识(云函数服务端写入,不做浏览器鉴权依据)", "required": false }
+      ],
+      "indexes": [
+        { "key": "idx_spend_date", "type": "key", "attributes": ["spend_date"] },
+        { "key": "idx_category", "type": "key", "attributes": ["category"] },
+        { "key": "idx_product", "type": "key", "attributes": ["product_id"] }
+      ]
+    },
+    {
+      "tableId": "products",
+      "name": "商品信息",
+      "comment": "购买商品基础信息 + 商品分析标签id",
+      "columns": [
+        { "key": "name", "type": "string", "size": 255, "comment": "商品名", "required": true },
+        { "key": "category", "type": "string", "format": "enum", "elements": ["玩具", "食品", "服饰", "数码", "家居", "健康", "图书", "宠物", "户外", "娱乐", "美妆", "母婴"], "size": 64, "comment": "宽泛类型", "required": true },
+        { "key": "price", "type": "double", "comment": "参考价", "required": false },
+        { "key": "merchant", "type": "string", "size": 255, "comment": "商家/来源", "required": false },
+        { "key": "desc", "type": "string", "size": 2000, "comment": "商品描述", "required": false },
+        { "key": "tags", "type": "string", "size": 2000, "comment": "标签分析回填的细分标签JSON数组", "required": false },
+        { "key": "persona_ids", "type": "string", "size": 2000, "comment": "标签分析回填的关联人格JSON数组", "required": false },
+        { "key": "tag_analysis_id", "type": "string", "size": 128, "comment": "商品分析标签id(关联 product_tag_analysis)", "required": false },
+        { "key": "image_ref", "type": "string", "size": 512, "comment": "图片文件引用ID或URL", "required": false }
+      ],
+      "indexes": [
+        { "key": "idx_category", "type": "key", "attributes": ["category"] },
+        { "key": "idx_tag_analysis", "type": "key", "attributes": ["tag_analysis_id"] }
+      ]
+    },
+    {
+      "tableId": "product_tag_analysis",
+      "name": "商品标签分析",
+      "comment": "大模型对商品的细分标签/场景/总结/人格推断,由云函数写入",
+      "columns": [
+        { "key": "product_id", "type": "string", "size": 128, "comment": "关联商品", "required": true },
+        { "key": "tags_json", "type": "string", "size": 4000, "comment": "细分标签JSON数组", "required": false },
+        { "key": "persona_ids_json", "type": "string", "size": 2000, "comment": "关联人格JSON数组", "required": false },
+        { "key": "scene", "type": "string", "size": 500, "comment": "暗含消费场景", "required": false },
+        { "key": "summary", "type": "string", "size": 2000, "comment": "大模型总结", "required": false },
+        { "key": "raw_json", "type": "string", "size": 8000, "comment": "大模型原始返回", "required": false },
+        { "key": "model", "type": "string", "size": 128, "comment": "所用模型", "required": false },
+        { "key": "prompt_version", "type": "string", "size": 64, "comment": "Prompt版本", "required": false },
+        { "key": "status", "type": "string", "format": "enum", "elements": ["pending", "done", "failed"], "size": 16, "comment": "分析状态", "required": true }
+      ],
+      "indexes": [
+        { "key": "idx_product", "type": "key", "attributes": ["product_id"] }
+      ]
+    },
+    {
+      "tableId": "user_persona",
+      "name": "用户消费人格",
+      "comment": "大模型按周期推断的用户消费人格,按(用户,周期类型,周期)唯一",
+      "columns": [
+        { "key": "user_ref", "type": "string", "size": 128, "comment": "用户标识", "required": true },
+        { "key": "period_type", "type": "string", "format": "enum", "elements": ["month", "year"], "size": 16, "comment": "周期类型", "required": true },
+        { "key": "period_key", "type": "string", "size": 64, "comment": "周期键,如2026-10或2026", "required": true },
+        { "key": "dominant_id", "type": "string", "size": 64, "comment": "主人格id", "required": false },
+        { "key": "secondary_id", "type": "string", "size": 64, "comment": "次人格id", "required": false },
+        { "key": "scores_json", "type": "string", "size": 4000, "comment": "各人格得分JSON", "required": false },
+        { "key": "profile", "type": "string", "size": 4000, "comment": "人格画像描述", "required": false },
+        { "key": "interests_json", "type": "string", "size": 2000, "comment": "兴趣偏好JSON数组", "required": false },
+        { "key": "cycle_json", "type": "string", "size": 4000, "comment": "周期习惯JSON", "required": false },
+        { "key": "raw_json", "type": "string", "size": 8000, "comment": "大模型原始返回", "required": false },
+        { "key": "model", "type": "string", "size": 128, "comment": "所用模型", "required": false },
+        { "key": "status", "type": "string", "format": "enum", "elements": ["pending", "done", "failed"], "size": 16, "comment": "状态", "required": true }
+      ],
+      "indexes": [
+        { "key": "uq_user_period", "type": "unique", "attributes": ["user_ref", "period_type", "period_key"] }
+      ]
+    },
+    {
+      "tableId": "consumption_advice",
+      "name": "消费建议与商品推送",
+      "comment": "大模型给出的省钱/爱好建议 + 推荐商品id,云函数JOIN商品表后回传前端",
+      "columns": [
+        { "key": "user_ref", "type": "string", "size": 128, "comment": "用户标识", "required": true },
+        { "key": "advice_type", "type": "string", "format": "enum", "elements": ["save", "hobby"], "size": 16, "comment": "建议类型", "required": true },
+        { "key": "period_key", "type": "string", "size": 64, "comment": "周期键", "required": true },
+        { "key": "title", "type": "string", "size": 255, "comment": "建议标题", "required": false },
+        { "key": "summary", "type": "string", "size": 2000, "comment": "建议概述", "required": false },
+        { "key": "points_json", "type": "string", "size": 4000, "comment": "建议要点JSON数组", "required": false },
+        { "key": "product_ids_json", "type": "string", "size": 2000, "comment": "大模型给出的推荐商品idJSON数组", "required": false },
+        { "key": "matched_persona_id", "type": "string", "size": 64, "comment": "命中人格id", "required": false },
+        { "key": "raw_json", "type": "string", "size": 8000, "comment": "大模型原始返回", "required": false },
+        { "key": "status", "type": "string", "format": "enum", "elements": ["pending", "done", "failed"], "size": 16, "comment": "状态", "required": true }
+      ],
+      "indexes": [
+        { "key": "uq_user_type_period", "type": "unique", "attributes": ["user_ref", "advice_type", "period_key"] }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "functionId": "analyze-product-tags",
+      "name": "商品标签分析",
+      "runtime": "node-22",
+      "entrypoint": "src/main.js",
+      "commands": "npm install",
+      "timeout": 60,
+      "enabled": true,
+      "execute": ["users"],
+      "scopes": ["databases.read", "databases.write", "rows.read", "rows.write"],
+      "path": "functions/analyze-product-tags"
+    },
+    {
+      "functionId": "analyze-user-persona",
+      "name": "用户消费人格分析",
+      "runtime": "node-22",
+      "entrypoint": "src/main.js",
+      "commands": "npm install",
+      "timeout": 60,
+      "enabled": true,
+      "execute": ["users"],
+      "scopes": ["databases.read", "databases.write", "rows.read", "rows.write"],
+      "path": "functions/analyze-user-persona"
+    },
+    {
+      "functionId": "generate-consumption-advice",
+      "name": "消费建议与商品推送",
+      "runtime": "node-22",
+      "entrypoint": "src/main.js",
+      "commands": "npm install",
+      "timeout": 90,
+      "enabled": true,
+      "execute": ["users"],
+      "scopes": ["databases.read", "databases.write", "rows.read", "rows.write"],
+      "path": "functions/generate-consumption-advice"
+    }
+  ]
+}
